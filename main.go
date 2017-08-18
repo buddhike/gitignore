@@ -31,17 +31,17 @@ func Load(path string) (*GitIgnore, error) {
 // Match runs the rules in the parsed GitIgnore
 // against the specified path.
 func (g *GitIgnore) Match(path string) bool {
-	hit := false
+	shouldIgnore := false
 	var rule *Rule
 	for _, r := range g.rules {
 		rule = r
-		hit, _ := r.Matcher(newInput(path))
-		if hit {
-			break
+		m, _ := r.Matcher(newInput(path))
+		if m {
+			shouldIgnore = !r.IsNegate
 		}
 	}
 
-	if !hit {
+	if !shouldIgnore {
 		return false
 	}
 

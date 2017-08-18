@@ -34,3 +34,10 @@ func (i *Input) last() (rune, bool) {
 	}
 	return i.buffer[len(i.buffer)-1], true
 }
+
+func (i *Input) first() (rune, bool) {
+	if len(i.buffer) == 0 {
+		return 0, false
+	}
+	return i.buffer[0], true
+}

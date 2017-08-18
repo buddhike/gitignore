@@ -111,6 +111,12 @@ func TestMatch(t *testing.T) {
 				{"a/dd/d", false, 0},
 			},
 		},
+		{
+			Pattern: "!abc",
+			Expectations: []expectation{
+				{"abc", true, 3},
+			},
+		},
 	}
 
 	for _, test := range tests {

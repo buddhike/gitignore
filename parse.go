@@ -4,14 +4,16 @@ const CHAR_SEP = '/'
 const CHAR_WILDCARD = '*'
 const CHAR_CHOICE_START = '['
 const CHAR_CHOICE_END = ']'
+const CHAR_NEGATE = '!'
 
 type Matcher func(Input) (bool, Input)
 
 // Rule represents a parsed output of a single
 // line in .gitignore file.
 type Rule struct {
-	Matcher Matcher
-	IsDir   bool
+	Matcher  Matcher
+	IsDir    bool
+	IsNegate bool
 }
 
 // Helper function to match a given pattern in input.
@@ -236,6 +238,11 @@ func createMatcher(i Input) (Matcher, Input) {
 		var rest Input
 
 		switch c {
+		case CHAR_NEGATE:
+			if i.position == 0 {
+				i.advance()
+				continue
+			}
 		case CHAR_SEP:
 			matcher, rest = tryManySegmentsMatcher(i)
 			if matcher == nil {
@@ -262,9 +269,11 @@ func parse(line string) *Rule {
 	i := newInput(line)
 	p, _ := createMatcher(i)
 	l, _ := i.last()
+	f, _ := i.first()
 
 	return &Rule{
-		Matcher: p,
-		IsDir:   l == CHAR_SEP,
+		Matcher:  p,
+		IsDir:    l == CHAR_SEP,
+		IsNegate: f == CHAR_NEGATE,
 	}
 }

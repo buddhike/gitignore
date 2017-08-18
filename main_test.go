@@ -36,6 +36,20 @@ func TestLoad(t *testing.T) {
 		t.Fatal(le)
 	}
 
-	ok, _ := r.rules[0].Matcher(newInput("abc"))
-	assert.True(t, ok)
+	assert.True(t, r.Match("abc"))
+}
+
+func TestNegate(t *testing.T) {
+	err := createTestFile([]string{"abc", "!a"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r, le := Load(".tmp/test.gitignore")
+	if le != nil {
+		t.Fatal(le)
+	}
+
+	ok := r.Match("abc")
+	assert.False(t, ok)
 }
