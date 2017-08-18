@@ -40,7 +40,7 @@ func TestLoad(t *testing.T) {
 }
 
 func TestNegate(t *testing.T) {
-	err := createTestFile([]string{"abc", "!a"})
+	err := createTestFile([]string{"abc", "!abc/f"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,6 +50,6 @@ func TestNegate(t *testing.T) {
 		t.Fatal(le)
 	}
 
-	ok := r.Match("abc")
-	assert.False(t, ok)
+	assert.True(t, r.Match("abc/j"))
+	assert.False(t, r.Match("abc/f"))
 }
