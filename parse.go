@@ -1,6 +1,8 @@
 package main
 
 const CHAR_SEP = '/'
+const CHAR_SPACE = ' '
+const CHAR_TAB = '\t'
 const CHAR_WILDCARD = '*'
 const CHAR_OPTION = '?'
 const CHAR_CHOICE_START = '['
@@ -12,6 +14,7 @@ type Matcher func(Input) (bool, Input)
 // Rule represents a parsed output of a single
 // line in .gitignore file.
 type Rule struct {
+	Pattern  string
 	Matcher  func(path string) bool
 	IsDir    bool
 	IsNegate bool
@@ -30,6 +33,14 @@ func seq(pattern string, input Input) (bool, Input) {
 	}
 
 	return true, rest
+}
+
+func positiveMatcher(i Input) (bool, Input) {
+	return true, i
+}
+
+func negativeMatcher(i Input) (bool, Input) {
+	return false, i
 }
 
 // chain takes two Matchers - first and second, then returns a new Matcher
@@ -283,15 +294,26 @@ func tryOptionMatcher(i Input) (Matcher, Input) {
 	}, i
 }
 
+func tryEmptyMatcher(i Input) (Matcher, Input) {
+	copy := i
+	c, eof := i.current()
+	for !eof {
+		if c != CHAR_SPACE {
+			return nil, i
+		}
+		c, eof = i.advance()
+	}
+
+	return negativeMatcher, copy
+}
+
 // createMatcher converts an input containing a pattern
 // string to a matcher function that can be used to match the
 // corresponding pattern.
 func createMatcher(i Input) (Matcher, Input) {
 	// default matcher returns true without
 	// consuming any input.
-	p := func(i Input) (bool, Input) {
-		return true, i
-	}
+	p := positiveMatcher
 
 	for true {
 		c, eof := i.current()
@@ -335,11 +357,16 @@ func createMatcher(i Input) (Matcher, Input) {
 
 func parse(line string) *Rule {
 	i := newInput(line)
-	p, _ := createMatcher(i)
+	p, _ := tryEmptyMatcher(i)
+	if p == nil {
+		p, _ = createMatcher(i)
+	}
+
 	l, _ := i.last()
 	f, _ := i.first()
 
 	return &Rule{
+		Pattern: line,
 		Matcher: func(path string) bool {
 			m, _ := p(newInput(path))
 			return m
