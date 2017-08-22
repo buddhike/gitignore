@@ -2,6 +2,7 @@ package main
 
 const CHAR_SEP = '/'
 const CHAR_WILDCARD = '*'
+const CHAR_OPTION = '?'
 const CHAR_CHOICE_START = '['
 const CHAR_CHOICE_END = ']'
 const CHAR_NEGATE = '!'
@@ -71,7 +72,10 @@ func tryExactMatcher(pattern Input) (Matcher, Input) {
 		p = append(p, c)
 		c, eof = pattern.advance()
 
-		if c == CHAR_WILDCARD || c == CHAR_SEP || c == CHAR_CHOICE_START {
+		if c == CHAR_WILDCARD ||
+			c == CHAR_SEP ||
+			c == CHAR_CHOICE_START ||
+			c == CHAR_OPTION {
 			break
 		}
 	}
@@ -260,6 +264,24 @@ func eofMatcher(i Input) (bool, Input) {
 	return false, i
 }
 
+func tryOptionMatcher(i Input) (Matcher, Input) {
+	c, _ := i.current()
+	if c != CHAR_OPTION {
+		return nil, i
+	}
+
+	i.advance()
+
+	return func(i Input) (bool, Input) {
+		_, e := i.current()
+		if e {
+			return false, i
+		}
+		i.advance()
+		return true, i
+	}, i
+}
+
 // createMatcher converts an input containing a pattern
 // string to a matcher function that can be used to match the
 // corresponding pattern.
@@ -297,6 +319,8 @@ func createMatcher(i Input) (Matcher, Input) {
 			matcher, rest = tryWildcardMatcher(i)
 		case CHAR_CHOICE_START:
 			matcher, rest = tryChoiceMatcher(i)
+		case CHAR_OPTION:
+			matcher, rest = tryOptionMatcher(i)
 		default:
 			matcher, rest = tryExactMatcher(i)
 		}

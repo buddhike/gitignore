@@ -107,3 +107,10 @@ func TestTrailingSlash(t *testing.T) {
 	i := parse("abc/")
 	assert.True(t, i.Matcher("abc/"))
 }
+
+func TestSingleCharMatcher(t *testing.T) {
+	i := parse("a?")
+	assert.True(t, i.Matcher("ab"))
+	assert.False(t, i.Matcher("ba"))
+	assert.False(t, i.Matcher("abc"))
+}
