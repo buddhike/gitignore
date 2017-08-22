@@ -191,6 +191,7 @@ func tryManySegmentsMatcher(i Input) (Matcher, Input) {
 // tryChoiceMatcher creates a matcher to match any character
 // in the specified set.
 func tryChoiceMatcher(i Input) (Matcher, Input) {
+	// TODO: support ranges
 	copy := i
 	c, _ := i.current()
 	if c != CHAR_CHOICE_START {
