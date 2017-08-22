@@ -28,6 +28,19 @@ func Load(path string) (*GitIgnore, error) {
 	return &GitIgnore{rules: result}, nil
 }
 
+func NewGitIgnore(patterns ...string) *GitIgnore {
+	if patterns == nil {
+		patterns = []string{}
+	}
+
+	rules := []*Rule{}
+	for _, v := range patterns {
+		rules = append(rules, parse(v))
+	}
+
+	return &GitIgnore{rules: rules}
+}
+
 // Match runs the rules in the parsed GitIgnore
 // against the specified path.
 func (g *GitIgnore) Match(path string) bool {
@@ -35,7 +48,7 @@ func (g *GitIgnore) Match(path string) bool {
 	var rule *Rule
 	for _, r := range g.rules {
 		rule = r
-		m, _ := r.Matcher(newInput(path))
+		m := r.Matcher(path)
 		if m {
 			shouldIgnore = !r.IsNegate
 		}

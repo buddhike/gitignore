@@ -40,7 +40,7 @@ func TestLoad(t *testing.T) {
 }
 
 func TestNegate(t *testing.T) {
-	err := createTestFile([]string{"abc", "!abc/f"})
+	err := createTestFile([]string{"abc/de*", "!abc/def"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,6 +50,58 @@ func TestNegate(t *testing.T) {
 		t.Fatal(le)
 	}
 
-	assert.True(t, r.Match("abc/j"))
-	assert.False(t, r.Match("abc/f"))
+	assert.True(t, r.Match("abc/deh"))
+	assert.False(t, r.Match("abc/def"))
+}
+
+func TestRules(t *testing.T) {
+	i := parse("abc")
+	assert.True(t, i.Matcher("abc"))
+	assert.True(t, i.Matcher("abc/"))
+	assert.False(t, i.Matcher("abc/ "))
+	assert.False(t, i.Matcher("abcabc"))
+	assert.False(t, i.Matcher(""))
+	assert.False(t, i.Matcher("a"))
+}
+
+func TestWildcardInBetween(t *testing.T) {
+	i := parse("a*c")
+	assert.True(t, i.Matcher("abc"))
+	assert.True(t, i.Matcher("abc/"))
+	assert.True(t, i.Matcher("aaac"))
+	assert.False(t, i.Matcher("abcd"))
+	assert.False(t, i.Matcher("xabc"))
+}
+
+func TestMultipleDirectoryMatcher(t *testing.T) {
+	i := parse("a/**/c")
+	assert.True(t, i.Matcher("a/c"))
+	assert.True(t, i.Matcher("a/b/c"))
+	assert.True(t, i.Matcher("a/b/d/c"))
+	assert.False(t, i.Matcher("a/d"))
+	assert.False(t, i.Matcher("ab/c"))
+}
+
+func TestAnyDirectoryMatcher(t *testing.T) {
+	i := parse("a/*/c")
+	assert.True(t, i.Matcher("a/c"))
+	assert.True(t, i.Matcher("a/b/c"))
+	assert.False(t, i.Matcher("a/b/d/c"))
+	assert.False(t, i.Matcher("ab/c"))
+}
+
+func TestAllTrailingDirectories(t *testing.T) {
+	i := parse("a/*/")
+	assert.False(t, i.Matcher("a/c"))
+	assert.False(t, i.Matcher("a/c/d"))
+}
+
+func TestNegateRule(t *testing.T) {
+	i := parse("!abc")
+	assert.True(t, i.Matcher("abc"))
+}
+
+func TestTrailingSlash(t *testing.T) {
+	i := parse("abc/")
+	assert.True(t, i.Matcher("abc/"))
 }

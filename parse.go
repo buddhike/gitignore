@@ -11,7 +11,7 @@ type Matcher func(Input) (bool, Input)
 // Rule represents a parsed output of a single
 // line in .gitignore file.
 type Rule struct {
-	Matcher  Matcher
+	Matcher  func(path string) bool
 	IsDir    bool
 	IsNegate bool
 }
@@ -218,6 +218,48 @@ func tryChoiceMatcher(i Input) (Matcher, Input) {
 	}, i
 }
 
+func trySeparatorMatcher(i Input) (Matcher, Input) {
+	c, eof := i.current()
+	if c != CHAR_SEP {
+		return nil, i
+	}
+	i.advance()
+
+	copy := i
+	for c, eof = copy.current(); !eof && c == ' '; c, eof = copy.advance() {
+	}
+
+	if eof {
+		i = copy
+	}
+
+	return func(i Input) (bool, Input) {
+		c, e := i.current()
+		if c != CHAR_SEP && !e && eof {
+			return false, i
+		}
+
+		if !e {
+			i.advance()
+		}
+
+		return true, i
+	}, i
+}
+
+func eofMatcher(i Input) (bool, Input) {
+	c, eof := i.current()
+	if c == CHAR_SEP {
+		c, eof = i.advance()
+	}
+
+	if eof {
+		return true, i
+	}
+
+	return false, i
+}
+
 // createMatcher converts an input containing a pattern
 // string to a matcher function that can be used to match the
 // corresponding pattern.
@@ -231,7 +273,7 @@ func createMatcher(i Input) (Matcher, Input) {
 	for true {
 		c, eof := i.current()
 		if eof {
-			return p, i
+			break
 		}
 
 		var matcher Matcher
@@ -248,13 +290,14 @@ func createMatcher(i Input) (Matcher, Input) {
 			if matcher == nil {
 				matcher, rest = tryAnySegmentMatcher(i)
 			}
+			if matcher == nil {
+				matcher, rest = trySeparatorMatcher(i)
+			}
 		case CHAR_WILDCARD:
 			matcher, rest = tryWildcardMatcher(i)
 		case CHAR_CHOICE_START:
 			matcher, rest = tryChoiceMatcher(i)
-		}
-
-		if matcher == nil {
+		default:
 			matcher, rest = tryExactMatcher(i)
 		}
 
@@ -262,7 +305,7 @@ func createMatcher(i Input) (Matcher, Input) {
 		i = rest
 	}
 
-	return p, i
+	return chain(p, eofMatcher), i
 }
 
 func parse(line string) *Rule {
@@ -272,7 +315,10 @@ func parse(line string) *Rule {
 	f, _ := i.first()
 
 	return &Rule{
-		Matcher:  p,
+		Matcher: func(path string) bool {
+			m, _ := p(newInput(path))
+			return m
+		},
 		IsDir:    l == CHAR_SEP,
 		IsNegate: f == CHAR_NEGATE,
 	}
