@@ -77,9 +77,11 @@ func TestMultipleDirectoryMatcher(t *testing.T) {
 	i := parse("a/**/c")
 	assert.True(t, i.Matcher("a/c"))
 	assert.True(t, i.Matcher("a/b/c"))
+	assert.True(t, i.Matcher("a/b/c/"))
 	assert.True(t, i.Matcher("a/b/d/c"))
 	assert.False(t, i.Matcher("a/d"))
 	assert.False(t, i.Matcher("ab/c"))
+	assert.False(t, i.Matcher("a/b/c/d"))
 }
 
 func TestAnyDirectoryMatcher(t *testing.T) {
